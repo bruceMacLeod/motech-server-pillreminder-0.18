@@ -223,7 +223,7 @@
                             </filesets>
                         </configuration>
                     </execution>
-                    <execution>
+  <!--                    <execution>
                         <id>clean-config</id>
                         <goals>
                             <goal>clean</goal>
@@ -242,7 +242,7 @@
                                 </fileset>
                             </filesets>
                         </configuration>
-                    </execution>
+                    </execution> -->
                 </executions>
             </plugin>
         </plugins>
