@@ -73,4 +73,28 @@ public class CalllogSearchServiceImpl implements CalllogSearchService {
     public List<String> getAllPhoneNumbers() {
         return allCallDetailRecords.getAllPhoneNumbers();
     }
+
+    @Override
+    public void saveCallDetail(CallDetailRecord callDetail) {
+        CallDetailRecord record = allCallDetailRecords.findByCallId(callDetail.getCallId());
+        if (record == null) {
+            allCallDetailRecords.add(callDetail);
+        } else {
+            updateCallDetailRecord(callDetail, record);
+        }
+    }
+
+    private void updateCallDetailRecord(CallDetailRecord callDetail, CallDetailRecord record) {
+        record.setCallEvents(callDetail.getCallEvents());
+        record.setDisposition(callDetail.getDisposition());
+        record.setEndDate(callDetail.getEndDate());
+        record.setDuration(callDetail.getDuration());
+        allCallDetailRecords.update(record);
+    }
+
+
+    @Override
+    public CallDetailRecord getCallDetailById(String callId) {
+        return allCallDetailRecords.findByCallId(callId);
+    }
 }

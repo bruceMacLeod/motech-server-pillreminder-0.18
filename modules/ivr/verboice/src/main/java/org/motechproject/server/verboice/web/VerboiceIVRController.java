@@ -1,7 +1,14 @@
 package org.motechproject.server.verboice.web;
 
 import org.apache.commons.lang.StringUtils;
+import org.joda.time.DateTime;
 import org.motechproject.decisiontree.core.FlowSession;
+import org.motechproject.decisiontree.server.domain.CallDetailRecord;
+import org.motechproject.decisiontree.server.domain.CallDetailRecord.Disposition;
+import org.motechproject.decisiontree.server.domain.CallDirection;
+import org.motechproject.decisiontree.server.domain.CallEvent;
+import org.motechproject.decisiontree.server.domain.FlowSessionRecord;
+import org.motechproject.decisiontree.server.service.CalllogSearchService;
 import org.motechproject.decisiontree.server.service.DecisionTreeServer;
 import org.motechproject.decisiontree.server.service.FlowSessionService;
 import org.motechproject.ivr.service.SessionNotFoundException;
@@ -10,7 +17,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.servlet.ModelAndView;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.Serializable;
@@ -28,6 +34,8 @@ public class VerboiceIVRController {
     private FlowSessionService flowSessionService;
     @Autowired
     private DecisionTreeServer decisionTreeServer;
+    @Autowired
+    private CalllogSearchService searchService;
 
     public VerboiceIVRController() {
     }
@@ -69,18 +77,71 @@ public class VerboiceIVRController {
     @RequestMapping(value = "/ivr/callstatus", method = RequestMethod.GET)
     public void handleMissedCall(HttpServletRequest request) {
         String callStatus = request.getParameter("CallStatus");
+        String callSid = request.getParameter("CallSid");
+        String motechCallId = request.getParameter("motech_call_id");
         List<String> missedCallStatuses = Arrays.asList("busy", "failed", "no-answer");
+
         if (callStatus == null || callStatus.trim().isEmpty() || !missedCallStatuses.contains(callStatus)) {
+            if ("ringing".equals(callStatus)) {
+                CallDetailRecord record = ((FlowSessionRecord)flowSessionService.getSession(motechCallId)).getCallDetailRecord();
+                record.setDisposition(Disposition.UNKNOWN);
+                record.setCallDirection(CallDirection.Outbound);
+                record.setCallId(callSid);
+                CallEvent callEvent = new CallEvent("ringing");
+                record.addCallEvent(callEvent);
+                searchService.saveCallDetail(record);
+            } else if ("in-progress".equals(callStatus)) {
+                CallDetailRecord record = searchService.getCallDetailById(callSid);
+                record.setDisposition(Disposition.ANSWERED);
+                CallEvent callEvent = new CallEvent("in-progress");
+                record.addCallEvent(callEvent);
+                searchService.saveCallDetail(record);
+            } else if ("completed".equals(callStatus)) {
+                CallDetailRecord record = searchService.getCallDetailById(callSid);
+                record.setDisposition(Disposition.ANSWERED);
+                record.setEndDate(DateTime.now());
+                CallEvent callEvent = new CallEvent("completed");
+                record.addCallEvent(callEvent);
+                searchService.saveCallDetail(record);
+            }
             return;
         }
-        String motechCallId = request.getParameter("motech_call_id");
+        
+        updateMissedCall(callStatus, callSid, motechCallId);
+
         FlowSession session = flowSessionService.getSession(motechCallId);
         if (session == null) {
             throw new SessionNotFoundException("No session found! [Session Id " + motechCallId + "]");
         }
-        String callSid = request.getParameter("CallSid");
+
         session = flowSessionService.updateSessionId(motechCallId, callSid);
         decisionTreeServer.handleMissedCall(session.getSessionId());
+    }
+
+    private void updateMissedCall(String callStatus, String callSid, String motechCallId) {
+        if ("busy".equals(callStatus)) {
+            CallDetailRecord record = searchService.getCallDetailById(callSid);
+            record.setDisposition(Disposition.BUSY);
+            record.setCallDirection(CallDirection.Outbound);
+            record.setEndDate(DateTime.now());
+            CallEvent callEvent = new CallEvent("busy");
+            record.addCallEvent(callEvent);
+            searchService.saveCallDetail(record);
+        } else if ("failed".equals(callStatus)) {
+            CallDetailRecord record = searchService.getCallDetailById(callSid);
+            record.setDisposition(Disposition.FAILED);
+            record.setEndDate(DateTime.now());
+            CallEvent callEvent = new CallEvent("failed");
+            record.addCallEvent(callEvent);
+            searchService.saveCallDetail(record);
+        } else if ("no-answer".equals(callStatus)) {
+            CallDetailRecord record = searchService.getCallDetailById(callSid);
+            record.setDisposition(Disposition.NO_ANSWER);
+            record.setEndDate(DateTime.now());
+            CallEvent callEvent = new CallEvent("no answer");
+            record.addCallEvent(callEvent);
+            searchService.saveCallDetail(record);
+        }
     }
 
     private FlowSession updateOutgoingCallSessionIdWithVerboiceSid(String callId, String verboiceCallId) {
