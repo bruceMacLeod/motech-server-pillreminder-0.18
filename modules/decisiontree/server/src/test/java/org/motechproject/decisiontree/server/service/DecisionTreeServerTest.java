@@ -161,9 +161,12 @@ public class DecisionTreeServerTest {
 
         decisionTreeServer.getResponse(flowSession.getSessionId(), "1234567890", "freeivr", "sometree", "1", "en");
 
-        verify(treeEventProcessor).sendActionsBefore(node, new HashMap<String, Object>());
-        verify(treeEventProcessor, times(0)).sendActionsBefore(parentNode, new HashMap<String, Object>());
-        verify(treeEventProcessor, times(0)).sendActionsAfter(node, new HashMap<String, Object>());
+        Map<String, Object> params = new HashMap<String, Object>();
+        params.put("flowSessionId", flowSession.getSessionId());
+
+        verify(treeEventProcessor).sendActionsBefore(node, params);
+        verify(treeEventProcessor, times(0)).sendActionsBefore(parentNode, params);
+        verify(treeEventProcessor, times(0)).sendActionsAfter(node, params);
     }
 
     @Test
@@ -182,8 +185,11 @@ public class DecisionTreeServerTest {
 
         decisionTreeServer.getResponse(flowSession.getSessionId(), "1234567890", "freeivr", "sometree", "1", "en");
 
-        verify(treeEventProcessor, times(0)).sendActionsBefore(parentNode, new HashMap<String, Object>());
-        verify(treeEventProcessor, times(1)).sendActionsAfter(parentNode, new HashMap<String, Object>());
+        Map<String, Object> params = new HashMap<String, Object>();
+        params.put("flowSessionId", flowSession.getSessionId());
+
+        verify(treeEventProcessor, times(0)).sendActionsBefore(parentNode, params);
+        verify(treeEventProcessor, times(1)).sendActionsAfter(parentNode, params);
     }
 
     @Test
@@ -198,7 +204,10 @@ public class DecisionTreeServerTest {
 
         decisionTreeServer.getResponse(flowSession.getSessionId(), "1234567890", "freeivr", "sometree", "1", "en");
 
-        verify(treeEventProcessor).sendTransitionActions(transition, new HashMap<String, Object>());
+        Map<String, Object> params = new HashMap<String, Object>();
+        params.put("flowSessionId", flowSession.getSessionId());
+
+        verify(treeEventProcessor).sendTransitionActions(transition, params);
     }
 
     @Test
@@ -209,8 +218,11 @@ public class DecisionTreeServerTest {
 
         decisionTreeServer.getResponse(flowSession.getSessionId(), "1234567890", "freeivr", "sometree", null, "en");
 
-        verify(treeEventProcessor).sendActionsBefore(node, new HashMap<String, Object>());
-        verify(treeEventProcessor, times(0)).sendActionsAfter(node, new HashMap<String, Object>());
+        Map<String, Object> params = new HashMap<String, Object>();
+        params.put("flowSessionId", flowSession.getSessionId());
+
+        verify(treeEventProcessor).sendActionsBefore(node, params);
+        verify(treeEventProcessor, times(0)).sendActionsAfter(node, params);
     }
 
     static class InMemoryFlowSession implements FlowSession {

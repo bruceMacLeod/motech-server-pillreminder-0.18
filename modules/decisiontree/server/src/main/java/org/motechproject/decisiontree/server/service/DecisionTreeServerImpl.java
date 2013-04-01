@@ -115,9 +115,12 @@ public class DecisionTreeServerImpl implements org.motechproject.decisiontree.se
                 ITransition nextTransition = getTransitionForUserInput(transitionKey, node);
                 autowire(nextTransition);
 
-                treeEventProcessor.sendActionsAfter(node, new HashMap<String, Object>());
+                Map<String, Object> params = new HashMap<String, Object>();
+                params.put("flowSessionId", session.getSessionId());
+
+                treeEventProcessor.sendActionsAfter(node, params);
                 if (nextTransition instanceof Transition) {
-                    treeEventProcessor.sendTransitionActions((Transition) nextTransition, new HashMap<String, Object>());
+                    treeEventProcessor.sendTransitionActions((Transition) nextTransition, params);
                 }
 
                 node = nextTransition.getDestinationNode(transitionKey, session);
@@ -136,7 +139,10 @@ public class DecisionTreeServerImpl implements org.motechproject.decisiontree.se
     }
 
     private ModelAndView constructModelViewForNode(Node node, FlowSession session, String provider, String tree) {
-        treeEventProcessor.sendActionsBefore(node, new HashMap<String, Object>());
+        Map<String, Object> params = new HashMap<String, Object>();
+        params.put("flowSessionId", session.getSessionId());
+
+        treeEventProcessor.sendActionsBefore(node, params);
 
         ModelAndView mav = new ModelAndView();
         mav.setViewName(templateNameFor(provider, NODE_TEMPLATE_NAME));
