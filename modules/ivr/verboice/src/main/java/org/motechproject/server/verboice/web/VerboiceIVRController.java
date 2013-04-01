@@ -107,7 +107,7 @@ public class VerboiceIVRController {
             return;
         }
         
-        updateMissedCall(callStatus, callSid, motechCallId);
+        updateMissedCall(callStatus, callSid);
 
         FlowSession session = flowSessionService.getSession(motechCallId);
         if (session == null) {
@@ -118,7 +118,7 @@ public class VerboiceIVRController {
         decisionTreeServer.handleMissedCall(session.getSessionId());
     }
 
-    private void updateMissedCall(String callStatus, String callSid, String motechCallId) {
+    private void updateMissedCall(String callStatus, String callSid) {
         if ("busy".equals(callStatus)) {
             CallDetailRecord record = searchService.getCallDetailById(callSid);
             record.setDisposition(Disposition.BUSY);
